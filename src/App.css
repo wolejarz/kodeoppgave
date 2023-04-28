@@ -1,0 +1,32 @@
+table {
+  border-collapse: collapse;
+  margin: 0 auto;
+  border: 2px solid black;
+}
+
+caption {
+  font-size: 2em;
+  font-weight: bold;
+  padding: 0.5em;
+  position: relative;
+}
+
+table thead th {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  border: 2px solid black;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: rgb(240, 238, 238);
+}
+
+tr td {
+  padding-left: 1em;
+  border-left: 1px solid black;
+}
+
+input {
+  font-size: 1em;
+}
