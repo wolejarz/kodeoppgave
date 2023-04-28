@@ -9,7 +9,7 @@ class DataGrid extends React.Component {
   stationInformation: any[] = [];
   stationStatus: any[] = [];
   stationInformationTTL: number = 10;
-  columnNames: string[] = ["Station_id", "Name", "Address", "Available locks", "Available bikes"];
+  columnNames: string[] = ["Station_id", "Name", "Available locks", "Available bikes"];
 
   componentDidMount() {
     const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_information.json";
@@ -19,8 +19,7 @@ class DataGrid extends React.Component {
         this.stationInformation = dataAsJson.data.stations.map((station: any) => {
           return {
             Station_id: station.station_id,
-            Name: station.name,
-            Address: station.address
+            Name: station.name
           };
         });
         this.stationInformationTTL = dataAsJson.ttl;
@@ -37,11 +36,11 @@ class DataGrid extends React.Component {
   }
 
   fetchStationStatus() {
-    console.log("fetchStationStatus");
     const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_status.json";
     fetch(url)
       .then(response => response.json())
       .then(dataAsJson => {
+        console.log("fetchStationStatus", dataAsJson);
         this.stationStatus = dataAsJson.data.stations.map((station: any) => {
           return {
             Station_id: station.station_id,
@@ -69,18 +68,14 @@ class DataGrid extends React.Component {
         <table>
           <caption>OSLOBYSYKKEL</caption>
           <thead>
-            <tr>
-              {this.columnNames.map((column, index) => (
-                <th>{column}</th>
-              ))}
-            </tr>
+            <tr>{this.columnNames.map((column, index) => (column !== "Station_id" ? <th>{column}</th> : null))}</tr>
           </thead>
           <tbody>
             {data.map((row, index) => (
               <tr key={index}>
-                {Object.keys(row).map((column, index) => (
-                  <td key={index}>{row[column]}</td>
-                ))}
+                {Object.keys(row).map((column, index) =>
+                  column !== "Station_id" ? <td key={index}>{row[column]}</td> : null
+                )}
               </tr>
             ))}
           </tbody>
