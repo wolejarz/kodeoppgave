@@ -2,113 +2,92 @@ import React from "react";
 // import TableBody from "./TableBody";
 // import TableHead from "./TableHead";
 
-interface ColumnDef {
-  name: string;
-  dataType: "text" | "number";
-}
-
-class Table extends React.Component {
+class DataGrid extends React.Component {
   state = {
-    data: new Array<any>(),
-    TTL: 10
+    data: new Array<any>()
   };
-
-  columnDefinitions: ColumnDef[] = [];
+  stationInformation: any[] = [];
+  stationStatus: any[] = [];
+  stationInformationTTL: number = 10;
+  columnNames: string[] = ["Station_id", "Name", "Address", "Available locks", "Available bikes"];
 
   componentDidMount() {
-    const url = "http://" + document.location.host + "/Dataset.csv";
+    const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_information.json";
     fetch(url)
-      .then(response => response.text())
-      .then(text => {
-        const data = text.split("\n").map(row => {
-          const cells = row.split(",");
+      .then(response => response.json())
+      .then(dataAsJson => {
+        this.stationInformation = dataAsJson.data.stations.map((station: any) => {
           return {
-            seriesId: cells[0],
-            date: cells[1],
-            screen: cells[2],
-            views: cells[3]
+            Station_id: station.station_id,
+            Name: station.name,
+            Address: station.address
           };
         });
-        const columnNames = Object.keys(data[0]);
-        this.columnDefinitions = columnNames.map(columnName => {
-          return {
-            name: columnName,
-            dataType: columnName === "views" ? "number" : "text"
-          };
+        this.stationInformationTTL = dataAsJson.ttl;
+        this.stationInformation.forEach(station => {
+          station["Available locks"] = 0;
+          station["Available bikes"] = 0;
         });
-        const dataSet = data.slice(1, data.length);
-        this.setState({ data: dataSet });
-        const filters = this.columnDefinitions.map(column => {
-          return {
-            minValue: "",
-            maxValue: ""
-          };
-        });
-        this.setState({ filters: filters });
+        this.setState({ data: this.stationInformation });
+        this.fetchStationStatus();
+        setInterval(() => {
+          this.fetchStationStatus();
+        }, this.stationInformationTTL * 1000);
       });
   }
 
-  private getSortedAndFileredData = () => {
-    const { data, sortColumn, sortDirection, filters } = this.state;
-    const sortColumnType = this.columnDefinitions.find(column => column.name === sortColumn)?.dataType;
-    const sortDirectionAsNegator = sortDirection === "asc" ? 1 : -1;
-    const sortedData = data
-      .sort((a, b) => comparator(a[sortColumn], b[sortColumn], sortColumnType) * sortDirectionAsNegator)
-      .filter(dataRow => this.dataRowIsFiltered(dataRow, filters));
-    return sortedData;
-  };
-
-  private dataRowIsFiltered = (dataRow: any, filters: any[]) => {
-    let isFiltered = true;
-    for (let i = 0; i < filters.length; i++) {
-      const columnType = this.columnDefinitions[i].dataType;
-      const columnName = this.columnDefinitions[i].name;
-      const value = dataRow[columnName];
-      if (filters[i].minValue !== "" && comparator(filters[i].minValue, value, columnType) > 0) {
-        isFiltered = false;
-      }
-      if (filters[i].maxValue !== "" && comparator(filters[i].maxValue, value, columnType) < 0) {
-        isFiltered = false;
-      }
-    }
-    return isFiltered;
-  };
-
-  private handleSortChange = (columnName: string) => {
-    if (columnName === this.state.sortColumn) {
-      const direction = this.state.sortDirection === "asc" ? "desc" : "asc";
-      this.setState({ sortDirection: direction });
-    } else {
-      this.setState({ sortColumn: columnName });
-    }
-  };
-
-  private handleFilterChange = (column: string, valueMin: string, valueMax: string) => {
-    const copyOfFilters = [...this.state.filters];
-    const columnNumber = this.columnDefinitions.findIndex(columnDefinition => columnDefinition.name === column);
-    copyOfFilters[columnNumber] = { minValue: valueMin, maxValue: valueMax };
-    this.setState({ filters: copyOfFilters });
-  };
+  fetchStationStatus() {
+    console.log("fetchStationStatus");
+    const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_status.json";
+    fetch(url)
+      .then(response => response.json())
+      .then(dataAsJson => {
+        this.stationStatus = dataAsJson.data.stations.map((station: any) => {
+          return {
+            Station_id: station.station_id,
+            "Available locks": station.num_docks_available,
+            "Available bikes": station.num_bikes_available
+          };
+        });
+        this.stationStatus.forEach(station => {
+          const stationInformation = this.stationInformation.find(
+            stationInformation => stationInformation.Station_id === station.Station_id
+          );
+          if (stationInformation) {
+            stationInformation["Available locks"] = station["Available locks"];
+            stationInformation["Available bikes"] = station["Available bikes"];
+          }
+        });
+        this.setState({ data: this.stationInformation });
+      });
+  }
 
   render() {
-    const { filters, sortColumn, sortDirection } = this.state;
+    const { data } = this.state;
     return (
       <>
         <table>
-          <caption>NRK PROGRAMMER</caption>
-          <TableHead
-            columns={this.columnDefinitions}
-            filters={filters}
-            sortColumn={sortColumn}
-            sortDirection={sortDirection}
-            onSortChange={this.handleSortChange}
-            onFilterChange={this.handleFilterChange}
-          />
-          <TableBody data={this.getSortedAndFileredData()} columns={this.columnDefinitions} />
+          <caption>OSLOBYSYKKEL</caption>
+          <thead>
+            <tr>
+              {this.columnNames.map((column, index) => (
+                <th>{column}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, index) => (
+              <tr key={index}>
+                {Object.keys(row).map((column, index) => (
+                  <td key={index}>{row[column]}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
         </table>
       </>
     );
   }
 }
 
-export default Table;
+export default DataGrid;
