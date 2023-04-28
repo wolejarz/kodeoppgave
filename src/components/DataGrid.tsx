@@ -9,7 +9,7 @@ class DataGrid extends React.Component {
   stationInformation: any[] = [];
   stationStatus: any[] = [];
   stationInformationTTL: number = 10;
-  columnNames: string[] = ["Station_id", "Name", "Available locks", "Available bikes"];
+  columnNames: string[] = ["Id", "Navn", "Tilgjengelige låser", "Ledige sykler"];
 
   componentDidMount() {
     const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_information.json";
@@ -18,7 +18,7 @@ class DataGrid extends React.Component {
       .then(dataAsJson => {
         this.stationInformation = dataAsJson.data.stations.map((station: any) => {
           return {
-            Station_id: station.station_id,
+            Id: station.station_id,
             Name: station.name
           };
         });
@@ -42,20 +42,14 @@ class DataGrid extends React.Component {
       .then(dataAsJson => {
         console.log("fetchStationStatus", dataAsJson);
         this.stationStatus = dataAsJson.data.stations.map((station: any) => {
-          return {
-            Station_id: station.station_id,
-            "Available locks": station.num_docks_available,
-            "Available bikes": station.num_bikes_available
-          };
-        });
-        this.stationStatus.forEach(station => {
-          const stationInformation = this.stationInformation.find(
-            stationInformation => stationInformation.Station_id === station.Station_id
+          const stationIndex = this.stationInformation.findIndex(
+            stationInformation => stationInformation.Id === station.station_id
           );
-          if (stationInformation) {
-            stationInformation["Available locks"] = station["Available locks"];
-            stationInformation["Available bikes"] = station["Available bikes"];
+          if (stationIndex === -1) {
+            return null;
           }
+          this.stationInformation[stationIndex]["Available locks"] = station.num_docks_available;
+          this.stationInformation[stationIndex]["Available bikes"] = station.num_bikes_available;
         });
         this.setState({ data: this.stationInformation });
       });
@@ -68,14 +62,12 @@ class DataGrid extends React.Component {
         <table>
           <caption>OSLOBYSYKKEL</caption>
           <thead>
-            <tr>{this.columnNames.map((column, index) => (column !== "Station_id" ? <th>{column}</th> : null))}</tr>
+            <tr>{this.columnNames.map((column, index) => (column !== "Id" ? <th>{column}</th> : null))}</tr>
           </thead>
           <tbody>
             {data.map((row, index) => (
               <tr key={index}>
-                {Object.keys(row).map((column, index) =>
-                  column !== "Station_id" ? <td key={index}>{row[column]}</td> : null
-                )}
+                {Object.keys(row).map((column, index) => (column !== "Id" ? <td key={index}>{row[column]}</td> : null))}
               </tr>
             ))}
           </tbody>
