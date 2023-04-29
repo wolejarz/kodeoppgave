@@ -9,7 +9,7 @@ class DataGrid extends React.Component {
   stationInformation: any[] = [];
   stationStatus: any[] = [];
   stationInformationTTL: number = 10;
-  columnNames: string[] = ["Id", "Navn", "Tilgjengelige låser", "Ledige sykler"];
+  columnNames: string[] = ["Navn", "Tilgjengelige låser", "Ledige sykler"];
 
   componentDidMount() {
     const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_information.json";
@@ -40,13 +40,12 @@ class DataGrid extends React.Component {
     fetch(url)
       .then(response => response.json())
       .then(dataAsJson => {
-        console.log("fetchStationStatus", dataAsJson);
-        this.stationStatus = dataAsJson.data.stations.map((station: any) => {
+        this.stationStatus = dataAsJson.data.stations.forEach((station: any) => {
           const stationIndex = this.stationInformation.findIndex(
             stationInformation => stationInformation.Id === station.station_id
           );
           if (stationIndex === -1) {
-            return null;
+            return;
           }
           this.stationInformation[stationIndex]["Available locks"] = station.num_docks_available;
           this.stationInformation[stationIndex]["Available bikes"] = station.num_bikes_available;
@@ -62,7 +61,11 @@ class DataGrid extends React.Component {
         <table>
           <caption>OSLOBYSYKKEL</caption>
           <thead>
-            <tr>{this.columnNames.map((column, index) => (column !== "Id" ? <th>{column}</th> : null))}</tr>
+            <tr>
+              {this.columnNames.map((column, index) => (
+                <th key={index}>{column}</th>
+              ))}
+            </tr>
           </thead>
           <tbody>
             {data.map((row, index) => (
