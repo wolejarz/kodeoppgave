@@ -23,12 +23,14 @@ tbody tr:nth-child(odd) {
 }
 
 tr td {
-  padding-left: 1em;
+  padding: 0.4em;
   border-left: 1px solid black;
+  font-size: 1.2em;
 }
 
 tr th {
   padding: 1em;
+  font-size: 1.3em;
 }
 
 #error-msg {
