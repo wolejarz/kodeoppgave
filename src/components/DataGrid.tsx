@@ -1,57 +1,53 @@
 import React from "react";
-// import TableBody from "./TableBody";
-// import TableHead from "./TableHead";
+import { STATION_INFORMATION_URL, STATION_STATUS_URL } from "../utilities/constants";
+import { fetchData } from "../utilities/DataFetching";
 
 class DataGrid extends React.Component {
   state = {
     data: new Array<any>()
   };
   stationInformation: any[] = [];
-  stationStatus: any[] = [];
   stationInformationTTL: number = 10;
   columnNames: string[] = ["Navn", "Tilgjengelige låser", "Ledige sykler"];
 
   componentDidMount() {
-    const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_information.json";
-    fetch(url)
-      .then(response => response.json())
-      .then(dataAsJson => {
-        this.stationInformation = dataAsJson.data.stations.map((station: any) => {
-          return {
-            Id: station.station_id,
-            Name: station.name
-          };
-        });
-        this.stationInformationTTL = dataAsJson.ttl;
-        this.stationInformation.forEach(station => {
-          station["Available locks"] = 0;
-          station["Available bikes"] = 0;
-        });
-        this.setState({ data: this.stationInformation });
+    fetchData(STATION_INFORMATION_URL, this.transformStationInformationData.bind(this)).then(() => {
+      this.setState({ data: this.stationInformation });
+      this.fetchStationStatus();
+      setInterval(() => {
         this.fetchStationStatus();
-        setInterval(() => {
-          this.fetchStationStatus();
-        }, this.stationInformationTTL * 1000);
-      });
+      }, this.stationInformationTTL * 1000);
+    });
   }
 
-  fetchStationStatus() {
-    const url = "https://gbfs.urbansharing.com/oslobysykkel.no/station_status.json";
-    fetch(url)
-      .then(response => response.json())
-      .then(dataAsJson => {
-        this.stationStatus = dataAsJson.data.stations.forEach((station: any) => {
-          const stationIndex = this.stationInformation.findIndex(
-            stationInformation => stationInformation.Id === station.station_id
-          );
-          if (stationIndex === -1) {
-            return;
-          }
-          this.stationInformation[stationIndex]["Available locks"] = station.num_docks_available;
-          this.stationInformation[stationIndex]["Available bikes"] = station.num_bikes_available;
-        });
-        this.setState({ data: this.stationInformation });
-      });
+  private transformStationInformationData(stationInformationAsJSON: any) {
+    this.stationInformationTTL = stationInformationAsJSON.ttl;
+    this.stationInformation = stationInformationAsJSON.data.stations.map((station: any) => {
+      return {
+        Id: station.station_id,
+        Name: station.name,
+        "Available locks": 0,
+        "Available bikes": 0
+      };
+    });
+  }
+
+  private fetchStationStatus() {
+    fetchData(STATION_STATUS_URL, this.transformStationStatusData.bind(this));
+  }
+
+  private transformStationStatusData(stationStatusAsJSON: any) {
+    stationStatusAsJSON.data.stations.forEach((station: any) => {
+      const stationIndex = this.stationInformation.findIndex(
+        stationInformation => stationInformation.Id === station.station_id
+      );
+      if (stationIndex === -1) {
+        return;
+      }
+      this.stationInformation[stationIndex]["Available locks"] = station.num_docks_available;
+      this.stationInformation[stationIndex]["Available bikes"] = station.num_bikes_available;
+    });
+    this.setState({ data: this.stationInformation });
   }
 
   render() {
