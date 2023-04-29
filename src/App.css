@@ -27,6 +27,10 @@ tr td {
   border-left: 1px solid black;
 }
 
+tr th {
+  padding: 1em;
+}
+
 #error-msg {
   display: none;
   background: #f54242;
